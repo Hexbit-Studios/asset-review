@@ -1,0 +1,11 @@
+# Keep LF everywhere (Windows checkouts included) and never touch binary assets.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.gif binary
+*.glb binary
+*.blend binary
+*.aseprite binary
+*.ase binary
+*.woff2 binary
