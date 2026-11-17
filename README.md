@@ -165,7 +165,7 @@ UI: React + Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com) (Radix, `radix-
 
 ## Releasing
 
-1. Bump `version` in `package.json` and add a section to `CHANGELOG.md`.
+1. Bump `version` in `package.json` and add a `## <version>` section to `CHANGELOG.md`. That section becomes the GitHub Release notes (`node scripts/release-notes.ts <version>` previews them), and the release fails early if it's missing.
 2. Commit, then tag and push: `git tag v0.2.0 && git push origin main --tags`.
 3. The `Release` workflow tests, builds, publishes `@hexbit/asset-review` to npm (trusted publishing, with provenance) and creates the GitHub Release.
 
