@@ -2,6 +2,8 @@
 
 A project-agnostic viewer for reviewing game art: 3D meshes, sprites, sprite sheets, sprite stacks and Aseprite files. You can leave screenshot notes on anything you're looking at. Notes are plain files in the reviewed folder, so an artist, a contractor or a coding agent can read them, act on them and reply.
 
+![A skinned character mid-walk under the Neon night lighting preset, with the asset list on the left and the inspector showing model stats and the lighting editor on the right](docs/screenshots/overview.png)
+
 ```bash
 pnpm install
 node bin/asset-review.ts ~/my-game/assets   # opens http://localhost:5199
@@ -20,6 +22,17 @@ Optional, to get the `asset-review` command everywhere: `pnpm link --global` (fr
 | Animated images | `.gif` `.webp` | Decoded frame by frame (Chromium). |
 | Sprite stacks | `name.stack15.png`, or a sidecar `name.json` containing `{"stack":{"slices":15}}`, or layout **stack** | One row of slices, ground slice on the left, as in SpriteCook's [sprite stacking guide](https://www.spritecook.ai/blog/sprite-stacking-pixel-art). Each slice is drawn as a real horizontal plane, so you can orbit, change the pitch (which acts like the squash factor) and change slice spacing. **Native px** renders at sprite resolution for the true pixel look. Aseprite files can also be stacks (each frame is one slice). |
 | Direction sheets | `name.dir16.png` or layout **dir sheet** | 8, 16 or 32 directions in rows of 8. |
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/sprite-stack.png" alt="A pixel-art hover car drawn as a 15-slice sprite stack, turned to 68 degrees on the turntable"></td>
+    <td width="50%"><img src="docs/screenshots/aseprite.png" alt="An Aseprite file playing its blink tag, with its layers and groups listed in the inspector (light theme)"></td>
+  </tr>
+  <tr>
+    <td>Sprite stacks render as real stacked slices: orbit them, change the pitch and slice spacing, and view them at native pixel resolution.</td>
+    <td>Aseprite files open directly: tags become clips, and layers and groups can be switched on and off.</td>
+  </tr>
+</table>
 
 ## Model animation
 
@@ -45,6 +58,17 @@ Edits apply live and are kept in your browser; the section header says **edited*
 HDR bloom is on by default (**E** toggles it; strength, threshold and radius are in the inspector). Only pixels brighter than the threshold glow, so emissive materials with Blender Emission Strength above 1 bloom and ordinary lit surfaces don't. Unlit sprites never exceed 1.0, so lower the threshold to make sprite neon glow. Screenshots and notes capture the bloom.
 
 ## Reviewing
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/note-composer.png" alt="The new-note dialog with a screenshot of a turret and a marker on its glowing visor"></td>
+    <td width="50%"><img src="docs/screenshots/notes.png" alt="A note thread on the turret: the reviewer's note marked addressed, a reply explaining the fix, and the note's marker shown in the viewport"></td>
+  </tr>
+  <tr>
+    <td>Press <b>N</b> over the problem: the screenshot and marker are captured instantly.</td>
+    <td>Replies (here from an agent via the CLI) appear live; <b>Go to view</b> restores the exact camera and frame.</td>
+  </tr>
+</table>
 
 - **N**: new note. The viewport is captured the moment you press it, with a marker where your cursor was. Click the image to add more markers, type, then press Enter. Saving marks the asset *needs work*.
 - **P**: screenshot to `.review/shots/` and the clipboard.
