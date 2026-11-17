@@ -1,0 +1,14 @@
+node_modules
+dist
+.vite
+.DS_Store
+*.log
+.env*
+
+# Blender backups
+*.blend[0-9]
+*.blend[0-9][0-9]
+
+# Review data written while developing against the examples (notes, screenshots, cache)
+examples/.review
+examples/review.config.json
