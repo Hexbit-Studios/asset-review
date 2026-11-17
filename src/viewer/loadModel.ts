@@ -17,10 +17,8 @@ export interface LoadedModel {
 let draco: DRACOLoader | null = null;
 function gltfLoader() {
   const loader = new GLTFLoader();
-  if (!draco) {
-    draco = new DRACOLoader();
-    draco.setDecoderPath('/node_modules/three/examples/jsm/libs/draco/gltf/');
-  }
+  // DRACOLoader locates its decoder via import.meta.url, which Vite bundles into the build.
+  draco ??= new DRACOLoader();
   loader.setDRACOLoader(draco);
   loader.setMeshoptDecoder(MeshoptDecoder);
   return loader;

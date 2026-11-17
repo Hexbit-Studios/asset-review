@@ -133,7 +133,8 @@ export function App() {
 
   // Live file changes from the server watcher.
   useEffect(() => {
-    if (!import.meta.hot) return;
+    // Server-sent events from the review backend (works in dev and in the published build).
+    const source = new EventSource('/api/events');
     const handler = (data: { changes: { path: string; type: string }[] }) => {
       let assetsChanged = false;
       let notesChanged = false;
@@ -156,8 +157,12 @@ export function App() {
       }
       if (notesChanged) refreshNotes();
     };
-    import.meta.hot.on('review:fs', handler);
-    return () => import.meta.hot?.off('review:fs', handler);
+    const onFs = (e: MessageEvent) => handler(JSON.parse(e.data));
+    source.addEventListener('fs', onFs);
+    return () => {
+      source.removeEventListener('fs', onFs);
+      source.close();
+    };
   }, [refreshAssets, refreshNotes]);
 
   // ---------------------------------------------------------------- viewer
