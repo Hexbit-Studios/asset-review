@@ -1,0 +1,18 @@
+{
+  // Compiles the CLI and server to plain JavaScript for the npm package (dist/node).
+  // The UI is built separately by Vite into dist/client.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "rootDir": ".",
+    "outDir": "dist/node",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["bin", "server", "shared"],
+  "exclude": ["server/plugin.ts"]
+}

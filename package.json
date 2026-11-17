@@ -1,26 +1,65 @@
 {
-  "name": "asset-review",
+  "name": "@hexbit/asset-review",
   "version": "0.1.0",
-  "private": true,
-  "description": "Project-agnostic 3D mesh / sprite / sprite-stack review tool with screenshot notes",
+  "description": "Review 3D models, sprites, sprite stacks and Aseprite files with screenshot notes that live in your repo.",
+  "keywords": [
+    "game-dev",
+    "asset-review",
+    "three.js",
+    "gltf",
+    "aseprite",
+    "sprite",
+    "sprite-stacking",
+    "pixel-art",
+    "review",
+    "blender"
+  ],
+  "homepage": "https://github.com/Hexbit-Studios/asset-review#readme",
+  "bugs": {
+    "url": "https://github.com/Hexbit-Studios/asset-review/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hexbit-Studios/asset-review.git"
+  },
+  "license": "MIT",
+  "author": "Hexbit Studios",
   "type": "module",
   "bin": {
-    "asset-review": "./bin/asset-review.ts"
+    "asset-review": "dist/node/bin/asset-review.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "dev": "node bin/asset-review.ts ./examples",
+    "dev": "node bin/asset-review.ts ./examples --dev",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "start": "node dist/node/bin/asset-review.js ./examples",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "fixtures": "node scripts/make-fixtures.ts"
-  },
-  "engines": {
-    "node": ">=22.18"
+    "fixtures": "node scripts/make-fixtures.ts",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
+    "chokidar": "^5.0.0"
+  },
+  "devDependencies": {
     "@fontsource-variable/geist": "^5.3.0",
     "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.3.0",
-    "chokidar": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "lucide-react": "^1.73.0",
@@ -33,14 +72,9 @@
     "tailwindcss": "^4.3.5",
     "three": "^0.187.0",
     "tw-animate-css": "^1.4.0",
-    "vite": "^8.3.8"
-  },
-  "devDependencies": {
-    "@types/node": "^26.6.6",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@types/three": "^0.187.0",
     "typescript": "5.9.3",
+    "vite": "^8.3.8",
     "vitest": "^5.1.0"
-  }
+  },
+  "packageManager": "pnpm@10.20.0"
 }
