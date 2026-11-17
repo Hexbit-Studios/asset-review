@@ -4,12 +4,36 @@ A project-agnostic viewer for reviewing game art: 3D meshes, sprites, sprite she
 
 ![A skinned character mid-walk under the Neon night lighting preset, with the asset list on the left and the inspector showing model stats and the lighting editor on the right](docs/screenshots/overview.png)
 
+## Quick start
+
+Needs [Node.js](https://nodejs.org) 20.19 or newer. From the folder you want to review (a game project, an asset folder, a delivery from an artist):
+
 ```bash
-pnpm install
-node bin/asset-review.ts ~/my-game/assets   # opens http://localhost:5199
+npx @hexbit/asset-review            # opens http://localhost:5199
 ```
 
-Optional, to get the `asset-review` command everywhere: `pnpm link --global` (from this folder). Node 22.18 or newer runs the TypeScript entry directly.
+Or install the `asset-review` command once:
+
+```bash
+npm install -g @hexbit/asset-review
+asset-review                        # review the current folder
+asset-review path/to/assets         # or any folder
+asset-review init                   # optional: .gitignore entry + review.config.json
+```
+
+`.blend` files need [Blender](https://www.blender.org) installed (set `BLENDER_PATH` if it isn't found). Everything else works with Node alone.
+
+## Working as a team
+
+Reviews are plain files in `.review/` inside the reviewed folder, so they travel with the project:
+
+1. **Reviewer** opens the project with `asset-review`, leaves notes, commits `.review/` and pushes.
+2. **Artist or developer** pulls, opens `asset-review`, fixes the asset and replies on the note (in the app, or `asset-review reply` from a terminal), marks it *addressed*, commits and pushes.
+3. **Reviewer** pulls and sees the reply and the updated asset (notes written before the change are tagged *updated since*), then resolves or reopens.
+
+Each note is its own file, so concurrent notes rarely conflict. Screenshots are PNGs; on long projects consider Git LFS (`git lfs track ".review/shots/*.png"`).
+
+**Without git:** point `asset-review` at a shared Dropbox, Google Drive or OneDrive folder. The sync app carries assets and notes between people, and the viewer picks up changes live.
 
 ## What it loads
 
@@ -113,7 +137,7 @@ Optional `review.config.json` in the root:
 ```bash
 asset-review notes <dir>                       # open notes as markdown, with absolute screenshot paths
 asset-review notes <dir> --status open,addressed --asset hovercar --json
-asset-review reply <id-prefix> "Shrunk the wheels 20%" --status addressed --dir <dir>
+asset-review reply <id-prefix> "Shrunk the wheels 20%" --status addressed --author claude --dir <dir>
 asset-review status <id-prefix> resolved --dir <dir>
 ```
 
@@ -122,11 +146,26 @@ The intended loop: the reviewer leaves notes, the agent reads them (`notes`, the
 ## Development
 
 ```bash
-pnpm fixtures     # regenerate examples/ (needs Blender for the turret)
-pnpm dev          # review ./examples
+pnpm install
+pnpm dev          # review ./examples with the Vite dev server (hot reload of the UI)
+pnpm build        # UI → dist/client, CLI + server → dist/node
+pnpm start        # run the built production server on ./examples
 pnpm test && pnpm typecheck
+pnpm fixtures     # regenerate examples/ (needs Blender for the models)
 ```
 
-Layout: `server/` (store, Blender conversion, Vite middleware API), `bin/` (CLI), `src/formats/` (Aseprite / sheet parsing), `src/viewer/` (three.js viewport, content types, playback), `src/ui/` (React panels).
+`node bin/asset-review.ts <dir> --dev` runs the CLI from source against any folder (Node 22.18+ runs the TypeScript directly).
+
+Layout: `bin/` (CLI), `server/` (review store, Blender conversion, the HTTP backend in `app.ts`, the production server in `serve.ts`, the Vite dev plugin in `plugin.ts`), `shared/` (types), `src/formats/` (Aseprite / sheet parsing), `src/viewer/` (three.js viewport, content types, playback), `src/ui/` (React panels).
 
 UI: React + Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com) (Radix, `radix-nova` style, lucide icons). The shadcn components live in `src/components/ui` (add more with `npx shadcn@latest add <name>`), and the theme tokens (magenta primary, cyan `info`, `success`, `warning`; light and dark) are in `src/index.css`. Everything is sized in rem and the root font size is never set, so the UI follows the browser's font-size setting. The side panels are resizable and remember their widths; the inspector sections below Info collapse and remember their state.
+
+## Releasing
+
+1. Bump `version` in `package.json` and add a section to `CHANGELOG.md`.
+2. Commit, then tag and push: `git tag v0.2.0 && git push origin main --tags`.
+3. The `Release` workflow tests, builds, publishes `@hexbit/asset-review` to npm (trusted publishing, with provenance) and creates the GitHub Release.
+
+## License
+
+[MIT](LICENSE) © Hexbit Studios
