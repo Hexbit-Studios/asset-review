@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      # Vitest 5 needs Node 22+; on Node 20 we only check that the published CLI runs.
+      - run: pnpm test
+        if: matrix.node != 20
+      - run: pnpm build
+      - name: CLI smoke test
+        run: |
+          node dist/node/bin/asset-review.js --version
+          node dist/node/bin/asset-review.js notes examples

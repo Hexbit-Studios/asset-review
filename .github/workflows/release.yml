@@ -1,0 +1,45 @@
+name: Release
+
+# Push a version tag (e.g. `git tag v0.2.0 && git push --tags`) after bumping package.json.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # create the GitHub Release
+  id-token: write # npm trusted publishing (OIDC) + provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest # trusted publishing needs npm >= 11.5.1
+      - run: pnpm install --frozen-lockfile
+      - name: Tag matches package.json
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME doesn't match package.json version $v"; exit 1; }
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      # Uses npm trusted publishing (configured on npmjs.com), so no npm token is stored in GitHub.
+      # Skipped when this version is already on npm (e.g. the first release, published by hand).
+      - name: Publish to npm
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          if npm view "@hexbit/asset-review@$v" version >/dev/null 2>&1; then
+            echo "@hexbit/asset-review@$v is already on npm; skipping publish"
+          else
+            npm publish --provenance --access public
+          fi
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
