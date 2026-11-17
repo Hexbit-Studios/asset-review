@@ -16,7 +16,9 @@ import type {
   AssetKind,
   AssetSettings,
   Note,
+  NoteAssetState,
   NoteReply,
+  NoteWithState,
   NoteStatus,
   ReviewConfig,
 } from '../shared/types.ts';
@@ -25,7 +27,23 @@ export const MODEL_EXTS = ['glb', 'gltf', 'fbx', 'obj', 'vox', 'blend'];
 export const IMAGE_EXTS = ['png', 'webp', 'gif', 'jpg', 'jpeg'];
 export const ASEPRITE_EXTS = ['aseprite', 'ase'];
 
-const DEFAULT_IGNORES = ['node_modules', '.git', '.review', 'dist', '.vite', '.DS_Store', 'Library', 'Temp'];
+/**
+ * Folder / file names never scanned: tooling, VCS, and the generated folders of common engines,
+ * which can hold huge numbers of files that aren't source art.
+ */
+export const DEFAULT_IGNORES = [
+  // tooling and version control
+  'node_modules', '.git', '.hg', '.svn', '.review', '.vite', '.cache', '.DS_Store', '.idea', '.vs', '.vscode',
+  '__pycache__', '.venv', 'venv', 'target',
+  // builds
+  'dist', 'build', 'Build', 'Builds', 'out',
+  // Godot
+  '.godot', '.import',
+  // Unity
+  'Library', 'Temp', 'Logs', 'obj', 'UserSettings',
+  // Unreal
+  'Intermediate', 'Saved', 'DerivedDataCache', 'Binaries',
+];
 
 export function kindForExt(ext: string): AssetKind | null {
   if (MODEL_EXTS.includes(ext)) return 'model';
@@ -38,6 +56,8 @@ export class ReviewStore {
   readonly root: string;
   readonly dir: string;
   config: ReviewConfig;
+  /** Content hashes keyed by absolute path, reused while mtime and size are unchanged. */
+  private hashCache = new Map<string, { mtimeMs: number; size: number; hash: string }>();
 
   constructor(root: string) {
     this.root = path.resolve(root);
@@ -152,6 +172,39 @@ export class ReviewStore {
     return out;
   }
 
+  /** sha1 of an asset's contents, or null when the file doesn't exist. Cached by mtime + size. */
+  hashOf(rel: string): string | null {
+    let abs: string;
+    let st: fs.Stats;
+    try {
+      abs = this.resolve(rel);
+      st = fs.statSync(abs);
+    } catch {
+      return null;
+    }
+    if (!st.isFile()) return null;
+    const cached = this.hashCache.get(abs);
+    if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) return cached.hash;
+    const hash = crypto.createHash('sha1').update(fs.readFileSync(abs)).digest('hex');
+    this.hashCache.set(abs, { mtimeMs: st.mtimeMs, size: st.size, hash });
+    return hash;
+  }
+
+  /**
+   * Has the asset changed since the note was written? Compares contents, so re-saving or
+   * re-exporting an identical file doesn't count. Older notes without a hash fall back to mtime.
+   */
+  assetState(note: Note): NoteAssetState {
+    const hash = this.hashOf(note.asset);
+    if (hash === null) return 'missing';
+    if (note.assetHash) return hash === note.assetHash ? 'same' : 'changed';
+    return this.mtimeOf(note.asset) > note.assetMtime + 1 ? 'changed' : 'same';
+  }
+
+  listNotesWithState(): NoteWithState[] {
+    return this.listNotes().map((n) => ({ ...n, assetState: this.assetState(n) }));
+  }
+
   mtimeOf(rel: string): number {
     try {
       return fs.statSync(this.resolve(rel)).mtimeMs;
@@ -238,10 +291,12 @@ export class ReviewStore {
   }): Note {
     const now = new Date();
     const id = makeId(now);
+    const assetHash = this.hashOf(input.asset);
     const note: Note = {
       id,
       asset: input.asset,
       assetMtime: this.mtimeOf(input.asset),
+      ...(assetHash ? { assetHash } : {}),
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
       author: input.author || this.defaultAuthor(),

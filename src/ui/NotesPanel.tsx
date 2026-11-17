@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Crosshair, Info, Send, Trash2 } from 'lucide-react';
-import type { AssetEntry, Note, NoteStatus } from '../../shared/types.ts';
+import type { AssetEntry, Note, NoteAssetState, NoteStatus, NoteWithState } from '../../shared/types.ts';
 import { api, fileUrl } from '../api.ts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Kbd } from '@/components/ui/kbd';
 import { cn } from '@/lib/utils';
 
 export function NotesPanel(props: {
-  notes: Note[];
+  notes: NoteWithState[];
   assets: AssetEntry[];
   asset: string | null;
   author: string;
@@ -22,7 +22,6 @@ export function NotesPanel(props: {
 }) {
   const [scope, setScope] = useState<'asset' | 'all'>('asset');
   const [show, setShow] = useState<'active' | 'all'>('active');
-  const mtimes = new Map(props.assets.map((a) => [a.path, a.mtime]));
 
   // Bring the focused note (e.g. clicked from an inspector badge) into view.
   useEffect(() => {
@@ -59,7 +58,7 @@ export function NotesPanel(props: {
             note={n}
             author={props.author}
             showAsset={scope === 'all'}
-            assetChanged={(mtimes.get(n.asset) ?? 0) > n.assetMtime + 1}
+            assetState={n.assetState}
             focused={props.focused === n.id}
             onRestore={() => props.onRestore(n)}
             onOpenImage={props.onOpenImage}
@@ -96,7 +95,7 @@ function NoteCard(props: {
   note: Note;
   author: string;
   showAsset: boolean;
-  assetChanged: boolean;
+  assetState: NoteAssetState;
   focused: boolean;
   onRestore: () => void;
   onOpenImage: (src: string) => void;
@@ -142,9 +141,14 @@ function NoteCard(props: {
         <Badge variant="outline" className={cn('uppercase', STATUS_BADGE[note.status])}>
           {note.status}
         </Badge>
-        {props.assetChanged && (
-          <Badge variant="outline" className="border-warning text-warning" title="The asset file changed after this note was written">
+        {props.assetState === 'changed' && (
+          <Badge variant="outline" className="border-warning text-warning" title="The asset's contents changed after this note was written">
             updated since
+          </Badge>
+        )}
+        {props.assetState === 'missing' && (
+          <Badge variant="outline" className="border-destructive text-destructive" title="The asset was moved or deleted after this note was written">
+            asset missing
           </Badge>
         )}
         <span className="text-xs text-muted-foreground">

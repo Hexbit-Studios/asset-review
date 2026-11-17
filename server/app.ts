@@ -196,7 +196,7 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL, st
   }
 
   if (route === '/notes' && method === 'GET') {
-    return send(res, 200, { notes: store.listNotes() });
+    return send(res, 200, { notes: store.listNotesWithState() });
   }
 
   if (route === '/notes' && method === 'POST') {

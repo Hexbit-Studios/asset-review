@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Box, Image, Layers, MessageSquare, Search } from 'lucide-react';
+import { Box, FileQuestion, Image, Layers, MessageSquare, Search } from 'lucide-react';
 import type { AssetEntry, AssetSettings, AssetStatus, Note } from '../../shared/types.ts';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -35,6 +35,8 @@ export function AssetList(props: {
   notes: Note[];
   settings: Record<string, AssetSettings>;
   selected: string | null;
+  /** Paths that notes refer to but that no longer exist. */
+  missing: string[];
   filter: AssetFilter;
   onFilter: (f: AssetFilter) => void;
   onSelect: (path: string) => void;
@@ -140,6 +142,33 @@ export function AssetList(props: {
             })}
           </div>
         ))}
+        {props.missing.length > 0 && (
+          <div>
+            <div className="px-3 pt-2.5 pb-1 font-mono text-xs text-warning" title="Notes refer to these files, but they were moved or deleted">
+              missing assets (notes only)
+            </div>
+            {props.missing.map((p) => {
+              const open = openCount.get(p) ?? 0;
+              const on = p === selected;
+              return (
+                <button
+                  key={p}
+                  data-selected={on}
+                  className={cn(
+                    'flex w-full items-center gap-2 border-l-2 border-transparent py-1 pr-3 pl-4 text-left text-sm text-muted-foreground hover:bg-muted',
+                    on && 'border-warning bg-accent text-accent-foreground hover:bg-accent',
+                  )}
+                  onClick={() => props.onSelect(p)}
+                  title={`${p} (moved or deleted)`}
+                >
+                  <FileQuestion className="size-3.5 text-warning" />
+                  <span className="min-w-0 flex-1 truncate line-through">{p}</span>
+                  {open > 0 && <Badge className="h-4 min-w-4 px-1 text-[0.7rem]">{open}</Badge>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       <footer className="border-t px-3 py-1.5 text-xs text-muted-foreground">
         {assets.length} / {props.total} assets

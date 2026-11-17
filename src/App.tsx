@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import type { AssetEntry, AssetSettings, Note, NoteMarker, ServerInfo, NoteInfo } from '../shared/types.ts';
+import type { AssetEntry, AssetSettings, Note, NoteMarker, NoteWithState, ServerInfo, NoteInfo } from '../shared/types.ts';
 import { api } from './api.ts';
 import { loadContent } from './loadContent.ts';
 import type { SpriteAsset } from './formats/sprite.ts';
@@ -72,7 +72,7 @@ export function App() {
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [assets, setAssets] = useState<AssetEntry[]>([]);
   const [assetSettings, setAssetSettings] = useState<Record<string, AssetSettings>>({});
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<NoteWithState[]>([]);
   const [selected, setSelected] = useState<string | null>(selectedFromHash());
   const [versions, setVersions] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -155,7 +155,8 @@ export function App() {
         refreshAssets();
         setVersions((v) => ({ ...v, ...bump }));
       }
-      if (notesChanged) refreshNotes();
+      // Asset edits change notes' "updated since" / "asset missing" state, so refetch on either.
+      if (notesChanged || assetsChanged) refreshNotes();
     };
     const onFs = (e: MessageEvent) => handler(JSON.parse(e.data));
     source.addEventListener('fs', onFs);
@@ -229,7 +230,21 @@ export function App() {
 
   useEffect(() => {
     const viewer = viewerRef.current;
-    if (!viewer || !entry) return;
+    if (!viewer) return;
+    if (!entry) {
+      // Selected asset no longer exists (moved / deleted): clear the viewer, keep its notes reachable.
+      if (selected && assets.length) {
+        ++loadToken.current;
+        viewer.setContent(null);
+        viewer.assetPath = null;
+        setContentKind(null);
+        setSprite(null);
+        setLoadNotes([]);
+        setLoading(false);
+        setError(null);
+      }
+      return;
+    }
     const token = ++loadToken.current;
     const isReload = viewer.content !== null && viewer.assetPath === entry.path;
     setLoading(true);
@@ -271,7 +286,7 @@ export function App() {
       })
       .finally(() => token === loadToken.current && setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry?.path, entry?.mtime, version, layoutKey, visKey, ppu]);
+  }, [entry?.path, entry?.mtime, version, layoutKey, visKey, ppu, selected, assets.length > 0]);
 
   const setViewer = useCallback((patch: Partial<ViewerSettings>) => viewerRef.current?.set(patch), []);
 
@@ -343,7 +358,7 @@ export function App() {
         screenshot: toPng(marked),
         cleanScreenshot: toPng(state.clean),
       });
-      setNotes((n) => [...n.filter((x) => x.id !== note.id), note]);
+      setNotes((n) => [...n.filter((x) => x.id !== note.id), { ...note, assetState: 'same' }]);
       setComposer(null);
       // Notes about an info row stay in the inspector, where the row now shows a badge.
       if (!state.info) setTab('notes');
@@ -502,6 +517,11 @@ export function App() {
   const focused = notes.find((n) => n.id === focusedNote) ?? null;
 
   const openOnAsset = assetNotes.filter((n) => n.status === 'open').length;
+  // Assets that notes point at but that no longer exist (moved or deleted).
+  const missingAssets = [...new Set(notes.filter((n) => n.assetState === 'missing').map((n) => n.asset))]
+    .filter((p) => !assets.some((a) => a.path === p))
+    .sort();
+  const selectedMissing = !!selected && assets.length > 0 && !entry;
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -518,9 +538,11 @@ export function App() {
             selected={selected}
             filter={filter}
             onFilter={setFilter}
+            missing={missingAssets}
             onSelect={(p) => {
               setSelected(p);
               setFocusedNote(null);
+              if (missingAssets.includes(p)) setTab('notes');
             }}
           />
         </ResizablePanel>
@@ -580,6 +602,11 @@ export function App() {
                 <Overlay className="pointer-events-auto border-destructive text-destructive select-text">{error}</Overlay>
               )}
               {!assets.length && !loading && <Overlay>No assets found in {info?.root}. Drop files here to add them to _inbox/.</Overlay>}
+              {selectedMissing && (
+                <Overlay className="border-warning">
+                  <b>{selected}</b> no longer exists (moved or deleted). Its notes are in the Notes tab.
+                </Overlay>
+              )}
               {dragging && (
                 <div className="pointer-events-none absolute inset-0 grid place-items-center bg-primary/10 text-xl">Drop to copy into _inbox/</div>
               )}
@@ -640,7 +667,7 @@ export function App() {
                 focused={focusedNote}
                 onRestore={restoreNote}
                 onOpenImage={setLightbox}
-                onChanged={(n) => setNotes((all) => all.map((x) => (x.id === n.id ? n : x)))}
+                onChanged={(n) => setNotes((all) => all.map((x) => (x.id === n.id ? { ...n, assetState: x.assetState } : x)))}
                 onDeleted={(id) => setNotes((all) => all.filter((x) => x.id !== id))}
               />
             </TabsContent>

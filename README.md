@@ -100,7 +100,8 @@ HDR bloom is on by default (**E** toggles it; strength, threshold and radius are
 - **Orbit** (or **C**) circles the camera around a 3D model. Speed (seconds per turn) and direction are in the inspector. Dragging takes over and the orbit resumes when you let go. Restoring a note's view always stops orbiting.
 - **Notes on info items:** hover any row in the inspector's Info box (triangles, size, texel density per mesh, textures, warnings…) and click **✎** to write a note about that item. The note records the item and its value at the time (CLI: `- about: Texel density: barrel_0 = 320.8 px/m`). Rows with active notes show a badge; click it to jump to the note.
 - **Go to view** on a note restores the exact camera, frame, lighting and settings from when it was written.
-- When an asset changes on disk it reloads in place and keeps your camera. Notes written before the change are tagged **updated since**.
+- When an asset changes on disk it reloads in place and keeps your camera. Notes written before the change are tagged **updated since**. The check compares file contents, so re-saving or re-exporting an identical file doesn't trigger it.
+- If an asset is moved or deleted, its notes stay: they're tagged **asset missing** and listed under *missing assets* at the bottom of the asset list.
 - Drag files or folders onto the window to copy them into `_inbox/` (handy for contractor deliveries).
 - The interface follows your OS light/dark setting. **T** (or the toolbar button) cycles Auto → Light → Dark, remembered per browser. The viewport background is a separate review setting (**B**), so screenshots look the same in either theme. It defaults to Mid grey for 3D models and Checker for 2D art, and each remembers its own choice.
 - Press **?** for every shortcut: playback, view presets, lighting (studio / day / night / neon night / flat, plus your own), display modes (albedo, wireframe, UV checker, normals), pixelate, onion skin, whole sheet with frame grid, 1.75 m human for scale.
@@ -118,6 +119,8 @@ The model inspector shows size in metres, triangle/vertex/material counts, bones
   assets.json            per-asset status and layout overrides
   cache/                 .blend conversions (safe to delete or gitignore)
 ```
+
+Folders that are never scanned: tooling and version control (`node_modules`, `.git`, …), build output (`dist`, `build`, `Build(s)`, `out`) and the generated folders of Godot (`.godot`, `.import`), Unity (`Library`, `Temp`, `Logs`, `obj`, `UserSettings`) and Unreal (`Intermediate`, `Saved`, `DerivedDataCache`, `Binaries`). Add more with `ignore` in the config.
 
 Optional `review.config.json` in the root:
 

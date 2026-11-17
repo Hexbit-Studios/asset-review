@@ -90,4 +90,56 @@ describe('ReviewStore', () => {
     new ReviewStore(root).updateConfig({ lighting: { night: { exposure: 2 } as any } });
     expect(JSON.parse(fs.readFileSync(path.join(root, 'review.config.json'), 'utf8'))).toEqual({ lighting: { night: { exposure: 2 } } });
   });
+
+  it('flags notes by content, not by re-saves, and spots missing assets', () => {
+    const root = tmpRoot();
+    const file = path.join(root, 'turret.glb');
+    fs.writeFileSync(file, 'v1');
+    const store = new ReviewStore(root);
+    const note = store.createNote({ asset: 'turret.glb', text: 'too shiny' });
+    expect(note.assetHash).toMatch(/^[0-9a-f]{40}$/);
+    expect(store.assetState(note)).toBe('same');
+
+    // Re-export with identical bytes (new mtime): not a change.
+    fs.writeFileSync(file, 'v1');
+    fs.utimesSync(file, new Date(), new Date(Date.now() + 60_000));
+    expect(store.assetState(note)).toBe('same');
+
+    fs.writeFileSync(file, 'v2');
+    expect(store.assetState(note)).toBe('changed');
+    expect(store.listNotesWithState()[0].assetState).toBe('changed');
+
+    fs.rmSync(file);
+    expect(store.assetState(note)).toBe('missing');
+  });
+
+  it('falls back to mtime for notes written before content hashes', () => {
+    const root = tmpRoot();
+    const file = path.join(root, 'old.png');
+    fs.writeFileSync(file, 'x');
+    const store = new ReviewStore(root);
+    const legacy = { ...store.createNote({ asset: 'old.png', text: '' }), assetHash: undefined };
+    expect(store.assetState(legacy)).toBe('same');
+    fs.utimesSync(file, new Date(), new Date(Date.now() + 60_000));
+    expect(store.assetState(legacy)).toBe('changed');
+  });
+
+  it('skips generated engine and build folders', () => {
+    const root = tmpRoot();
+    const files = [
+      'art/hero.png',
+      '.godot/imported/hero.png-abc.ctex.png',
+      'Intermediate/x.png',
+      'Saved/Screenshots/shot.png',
+      'DerivedDataCache/a.png',
+      'Library/cache.png',
+      'Builds/win/icon.png',
+      'build/icon.png',
+    ];
+    for (const f of files) {
+      fs.mkdirSync(path.dirname(path.join(root, f)), { recursive: true });
+      fs.writeFileSync(path.join(root, f), 'x');
+    }
+    expect(new ReviewStore(root).listAssets().map((a) => a.path)).toEqual(['art/hero.png']);
+  });
 });

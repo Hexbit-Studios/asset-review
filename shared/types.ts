@@ -41,8 +41,10 @@ export interface NoteMarker {
 export interface Note {
   id: string;
   asset: string;
-  /** mtime of the asset file when the note was written, used to flag "asset changed since". */
+  /** mtime of the asset file when the note was written (fallback for notes without a hash). */
   assetMtime: number;
+  /** sha1 of the asset file's contents when the note was written; drives "updated since". */
+  assetHash?: string;
   createdAt: string;
   updatedAt: string;
   author: string;
@@ -58,6 +60,15 @@ export interface Note {
   info?: NoteInfo;
   replies: NoteReply[];
 }
+
+/**
+ * How the asset compares to when a note was written. Computed by the server, not stored:
+ * `changed` = contents differ, `missing` = the file was moved or deleted.
+ */
+export type NoteAssetState = 'same' | 'changed' | 'missing';
+
+/** A note as returned by the API: the stored note plus its computed asset state. */
+export type NoteWithState = Note & { assetState: NoteAssetState };
 
 export type AssetStatus = 'unreviewed' | 'needs-work' | 'approved';
 

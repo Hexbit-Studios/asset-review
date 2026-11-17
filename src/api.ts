@@ -1,4 +1,4 @@
-import type { AssetEntry, AssetSettings, Note, NoteInfo, NoteMarker, NoteStatus, ServerInfo } from '../shared/types.ts';
+import type { AssetEntry, AssetSettings, Note, NoteInfo, NoteMarker, NoteStatus, NoteWithState, ServerInfo } from '../shared/types.ts';
 
 export function fileUrl(path: string, version?: number): string {
   const enc = path.split('/').map(encodeURIComponent).join('/');
@@ -17,7 +17,7 @@ export const api = {
     fetch('/api/config', { method: 'PATCH', body: JSON.stringify(patch) }).then((r) => json<ServerInfo['config']>(r)),
   assets: () =>
     fetch('/api/assets').then((r) => json<{ assets: AssetEntry[]; settings: Record<string, AssetSettings> }>(r)),
-  notes: () => fetch('/api/notes').then((r) => json<{ notes: Note[] }>(r)),
+  notes: () => fetch('/api/notes').then((r) => json<{ notes: NoteWithState[] }>(r)),
   createNote: (body: {
     asset: string;
     text: string;

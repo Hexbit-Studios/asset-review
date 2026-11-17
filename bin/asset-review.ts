@@ -142,9 +142,10 @@ Tip: on long projects, store screenshots with Git LFS:
 }
 
 function formatNote(n: Note, store: ReviewStore): string {
-  const changed = store.mtimeOf(n.asset) > n.assetMtime + 1;
+  const state = store.assetState(n);
+  const flag = state === 'changed' ? '  (asset changed since note)' : state === 'missing' ? '  (asset missing: moved or deleted)' : '';
   const lines = [
-    `## ${n.id}  [${n.status}]${changed ? '  (asset changed since note)' : ''}`,
+    `## ${n.id}  [${n.status}]${flag}`,
     `- asset: ${n.asset}`,
     `- by ${n.author} at ${n.createdAt}`,
   ];
