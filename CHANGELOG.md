@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+Fixes
+- *Updated since* now compares the asset's contents instead of its modified time, so re-saving or re-exporting an identical file no longer flags its notes. Notes written with 0.1.0 keep the old check.
+- Notes on assets that were moved or deleted no longer vanish: they're tagged *asset missing*, listed under *missing assets* in the asset list, and flagged in `asset-review notes`.
+- Large projects: generated engine and build folders are skipped by default (Godot `.godot` / `.import`, Unity `Library` / `Temp` / `Logs` / `obj`, Unreal `Intermediate` / `Saved` / `DerivedDataCache` / `Binaries`, `build`, `out`, and common tooling folders).
+- CI now runs on Windows and macOS as well as Linux; line endings are normalised so Windows checkouts behave the same.
+
 ## 0.1.0
 
 First release.

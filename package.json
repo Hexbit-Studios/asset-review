@@ -1,6 +1,6 @@
 {
   "name": "@hexbit/asset-review",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Review 3D models, sprites, sprite stacks and Aseprite files with screenshot notes that live in your repo.",
   "keywords": [
     "game-dev",
